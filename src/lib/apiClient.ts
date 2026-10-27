@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 export const apiClient = axios.create({
   baseURL: env.apiUrl,
-  timeout: 30_000,
+  timeout: 60_000,
 });
 
 apiClient.interceptors.request.use((config) => {
