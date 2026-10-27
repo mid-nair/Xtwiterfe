@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+
+/* Semantic tokens: components use `bg-bg`, `text-muted`, `border-line` etc.
+   and never hard-code a theme. Values switch via [data-theme] on <html>. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-field: var(--field);
+  --color-hover: var(--hover);
+  --color-brand: #1d9bf0;
+  --color-brand-hover: #1a8cd8;
+  --color-like: #f91880;
+  --color-repost: #00ba7c;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --fg: #e7e9ea;
+  --muted: #71767b;
+  --line: #2f3336;
+  --card: #16181c;
+  --field: #202327;
+  --hover: rgb(255 255 255 / 0.04);
+}
+
+:root[data-theme='dim'] {
+  color-scheme: dark;
+  --bg: #15202b;
+  --fg: #f7f9f9;
+  --muted: #8899ac;
+  --line: #38444d;
+  --card: #1e2732;
+  --field: #273340;
+  --hover: rgb(255 255 255 / 0.04);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #0f1419;
+  --muted: #536471;
+  --line: #eff3f4;
+  --card: #f7f9f9;
+  --field: #eff3f4;
+  --hover: rgb(0 0 0 / 0.04);
+}
+
+@layer base {
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-bg text-fg antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
