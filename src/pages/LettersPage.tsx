@@ -1,0 +1,113 @@
+import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { LetterModal } from '@/components/birthday/LetterModal';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { LETTER_SENDERS } from '@/config/birthday';
+import { useUserTweets } from '@/hooks/useFeeds';
+import { useIsBirthdayUser } from '@/hooks/useIsBirthdayUser';
+import { cn } from '@/lib/cn';
+import { useBirthdayStore } from '@/stores/birthdayStore';
+import { useLettersStore, useUnopenedLetters } from '@/stores/lettersStore';
+
+type Sender = (typeof LETTER_SENDERS)[number];
+
+interface EnvelopeProps {
+  sender: Sender;
+  onOpen: (sender: Sender, text: string) => void;
+}
+
+/** One sealed envelope. The letter text is the friend's newest top-level post. */
+function Envelope({ sender, onOpen }: EnvelopeProps) {
+  const feed = useUserTweets(sender.username, 'posts');
+  const opened = useLettersStore((state) => state.opened.includes(sender.username));
+  const letter = feed.tweets[0];
+
+  if (feed.isLoading) {
+    return <div aria-hidden="true" className="h-44 animate-pulse rounded-2xl bg-card" />;
+  }
+  // No letter in the database (yet): show nothing instead of an empty envelope.
+  if (!letter) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(sender, letter.content)}
+      aria-label={`${opened ? 'Reopen' : 'Open'} the letter from ${sender.name}`}
+      className="group relative h-44 w-full overflow-hidden rounded-2xl border border-line text-left shadow-lg transition-transform duration-300 hover:-translate-y-1"
+      style={{ background: `linear-gradient(160deg, ${sender.accent}, #2a1448)` }}
+    >
+      {/* Envelope flap */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-[62%] bg-white/15 transition-transform duration-300 group-hover:-translate-y-1"
+        style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }}
+      />
+      {/* Wax seal */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute left-1/2 top-[44%] flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl shadow-md transition-transform duration-300 group-hover:scale-110',
+          opened ? 'bg-white/90' : 'bg-[#ff4f6d]',
+        )}
+      >
+        {opened ? '💌' : '❤️'}
+      </span>
+
+      <span className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4 text-white">
+        <span>
+          <span className="block text-sm opacity-80">From</span>
+          <span className="block text-xl font-extrabold leading-tight">{sender.name}</span>
+        </span>
+        <span className="rounded-full bg-black/30 px-3 py-1 text-xs font-bold">
+          {opened ? 'Opened' : 'Tap to open ✨'}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/** Sealed letters from her friends. Only for the birthday account. */
+export function LettersPage() {
+  const isBirthday = useIsBirthdayUser();
+  const markOpened = useLettersStore((state) => state.markOpened);
+  const celebrate = useBirthdayStore((state) => state.celebrate);
+  const unopened = useUnopenedLetters();
+  const [active, setActive] = useState<{ sender: Sender; text: string } | null>(null);
+
+  if (!isBirthday) return <Navigate to="/" replace />;
+
+  const handleOpen = (sender: Sender, text: string) => {
+    setActive({ sender, text });
+    markOpened(sender.username);
+    celebrate();
+  };
+
+  return (
+    <>
+      <PageHeader
+        title="Letters 💌"
+        subtitle={unopened > 0 ? `${unopened} still sealed` : 'All opened. Read them again whenever you need a hug.'}
+      />
+
+      <p className="px-4 pt-4 text-[15px] text-muted">
+        Your people wrote you these. Tap an envelope to open it.
+      </p>
+
+      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
+        {LETTER_SENDERS.map((sender) => (
+          <Envelope key={sender.username} sender={sender} onOpen={handleOpen} />
+        ))}
+      </div>
+
+      {active && (
+        <LetterModal
+          open
+          onClose={() => setActive(null)}
+          from={active.sender.name}
+          accent={active.sender.accent}
+          text={active.text}
+        />
+      )}
+    </>
+  );
+}

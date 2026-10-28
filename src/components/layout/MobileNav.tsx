@@ -16,7 +16,7 @@ export function MobileNav() {
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
     >
-      {buildNavItems(username, unread, isBirthday).map(({ label, to, icon: Icon, end, badge }) => (
+      {buildNavItems(username, unread, { birthday: isBirthday, compact: true }).map(({ label, to, icon: Icon, end, badge }) => (
         <NavLink
           key={to}
           to={to}

@@ -1,7 +1,9 @@
-import { PartyPopper, Sparkles, Star } from 'lucide-react';
+import { Images, MailOpen, PartyPopper, Sparkles, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { BIRTHDAY_AGE, daysSinceBirthday } from '@/config/birthday';
 import { useBirthdayStore } from '@/stores/birthdayStore';
+import { useUnopenedLetters } from '@/stores/lettersStore';
 
 function describeDay(days: number): { title: string; subtitle: string } {
   if (days === 0) {
@@ -16,8 +18,10 @@ function describeDay(days: number): { title: string; subtitle: string } {
 
 /** The pink-and-purple card at the top of her Home feed. Works on phones, where the side panel is hidden. */
 export function BirthdayBanner() {
+  const navigate = useNavigate();
   const openPanel = useBirthdayStore((state) => state.openPanel);
   const celebrate = useBirthdayStore((state) => state.celebrate);
+  const unopenedLetters = useUnopenedLetters();
   const { title, subtitle } = describeDay(daysSinceBirthday());
 
   return (
@@ -29,6 +33,14 @@ export function BirthdayBanner() {
       <p className="mt-0.5 text-[15px] text-muted">{subtitle}</p>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => navigate('/letters')}>
+          <MailOpen className="size-4" />
+          {unopenedLetters > 0 ? `Letters (${unopenedLetters} sealed)` : 'Letters'}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => navigate('/memories')}>
+          <Images className="size-4" />
+          Memories
+        </Button>
         <Button variant="outline" size="sm" onClick={() => openPanel('tarot')}>
           <Sparkles className="size-4" />
           Tarot card

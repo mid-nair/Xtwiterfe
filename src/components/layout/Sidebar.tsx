@@ -14,6 +14,7 @@ import { useRequiredUser } from '@/hooks/useRequiredUser';
 import { useTripleTap } from '@/hooks/useTripleTap';
 import { cn } from '@/lib/cn';
 import { useBirthdayStore } from '@/stores/birthdayStore';
+import { useUnopenedLetters } from '@/stores/lettersStore';
 import { NavBadge } from './NavBadge';
 
 export function Sidebar() {
@@ -21,6 +22,7 @@ export function Sidebar() {
   const logout = useLogout();
   const unread = useUnreadCounts();
   const isBirthday = useIsBirthdayUser();
+  const unopenedLetters = useUnopenedLetters();
   const openPanel = useBirthdayStore((state) => state.openPanel);
   const [composing, setComposing] = useState(false);
   const closeCompose = useCallback(() => setComposing(false), []);
@@ -44,7 +46,7 @@ export function Sidebar() {
         </Link>
 
         <nav aria-label="Primary" className="flex flex-col items-center gap-1 xl:items-stretch">
-          {buildNavItems(user.username, unread, isBirthday).map(({ label, to, icon: Icon, end, badge }) => (
+          {buildNavItems(user.username, { ...unread, letters: unopenedLetters }, { birthday: isBirthday }).map(({ label, to, icon: Icon, end, badge }) => (
             <NavLink
               key={to}
               to={to}

@@ -21,7 +21,18 @@ export const CONFETTI_COLORS = ['#c26bff', '#ff4fa3', '#ffd166', '#6ee7ff', '#7c
 export const WELCOME_TITLE = `Happy ${BIRTHDAY_AGE}th Birthday, ${BIRTHDAY_FIRST_NAME}! 🎂`;
 export const WELCOME_MESSAGE =
   'Somebody built you your very own X. Everything here is yours: your manifestations, your tarot, your delulu JD updates and all the people who love you. Go on, make a wish. ✨';
-export const WELCOME_HINT = 'Psst: tap the X logo three times for a secret. 🤫';
+export const WELCOME_HINT = 'Psst: tap the X logo three times for a secret, and open the Letters 💌 your people wrote you.';
+
+/**
+ * Friends who wrote her a letter. Only usernames and names live here: the letters
+ * themselves are posts in the database (seeded from a private file), so they are
+ * only visible after logging in.
+ */
+export const LETTER_SENDERS = [
+  { username: 'neha_xo', name: 'Neha', accent: '#ff7eb6' },
+  { username: 'brinda_b', name: 'Brinda', accent: '#c26bff' },
+  { username: 'akshay_a', name: 'Akshay', accent: '#ffb347' },
+] as const;
 
 export const SECRET_LETTER = [
   'Hey V 💜',
