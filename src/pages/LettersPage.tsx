@@ -20,13 +20,28 @@ interface EnvelopeProps {
 function Envelope({ sender, onOpen }: EnvelopeProps) {
   const feed = useUserTweets(sender.username, 'posts');
   const opened = useLettersStore((state) => state.opened.includes(sender.username));
-  const letter = feed.tweets[0];
+  // The letter is the friend's long top-level post (over 280 characters), not just any post.
+  const letter = feed.tweets.find((tweet) => tweet.content.length > 280);
 
   if (feed.isLoading) {
     return <div aria-hidden="true" className="h-44 animate-pulse rounded-2xl bg-card" />;
   }
-  // No letter in the database (yet): show nothing instead of an empty envelope.
-  if (!letter) return null;
+
+  // Never hide an envelope: if the letter is not in the database yet, show a clear placeholder.
+  if (!letter) {
+    return (
+      <div
+        className="relative flex h-44 w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border border-dashed border-line px-4 text-center"
+        style={{ background: `linear-gradient(160deg, ${sender.accent}55, #2a144855)` }}
+      >
+        <span className="text-3xl" aria-hidden="true">✍️</span>
+        <span className="text-lg font-extrabold">From {sender.name}</span>
+        <span className="text-sm text-muted">
+          {feed.isError ? 'Could not load this letter. Please refresh.' : 'Still being written...'}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <button
