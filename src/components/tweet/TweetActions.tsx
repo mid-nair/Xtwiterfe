@@ -1,5 +1,6 @@
 import { BarChart2, Bookmark, Heart, MessageCircle, Repeat2 } from 'lucide-react';
 import { useEngageTweet } from '@/hooks/useEngageTweet';
+import { useIsBirthdayUser } from '@/hooks/useIsBirthdayUser';
 import { formatCount } from '@/lib/format';
 import type { EngagementAction, Tweet } from '@/types/tweet';
 import { ActionButton } from './ActionButton';
@@ -11,6 +12,7 @@ interface TweetActionsProps {
 
 export function TweetActions({ tweet, onReply }: TweetActionsProps) {
   const { mutate } = useEngageTweet();
+  const isBirthday = useIsBirthdayUser();
   const { stats, viewer_context: viewer } = tweet;
 
   const toggle = (isActive: boolean, on: EngagementAction, off: EngagementAction) =>
@@ -34,6 +36,7 @@ export function TweetActions({ tweet, onReply }: TweetActionsProps) {
         count={stats.likes}
         active={viewer.liked}
         fillWhenActive
+        burst={isBirthday}
         onClick={() => toggle(viewer.liked, 'LIKE', 'UNLIKE')}
       />
       {stats.impressions !== undefined && (

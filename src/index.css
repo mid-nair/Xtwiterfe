@@ -10,9 +10,9 @@
   --color-card: var(--card);
   --color-field: var(--field);
   --color-hover: var(--hover);
-  --color-brand: #1d9bf0;
-  --color-brand-hover: #1a8cd8;
-  --color-like: #f91880;
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-like: var(--like);
   --color-repost: #00ba7c;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -27,6 +27,9 @@
   --card: #16181c;
   --field: #202327;
   --hover: rgb(255 255 255 / 0.04);
+  --brand: #1d9bf0;
+  --brand-hover: #1a8cd8;
+  --like: #f91880;
 }
 
 :root[data-theme='dim'] {
@@ -51,24 +54,139 @@
   --hover: rgb(0 0 0 / 0.04);
 }
 
+/* Birthday theme: a deep plum "tarot night" with violet and pink accents.
+   Only offered to the birthday account (see ThemeSwitcher / BirthdayRoot). */
+:root[data-theme='birthday'] {
+  color-scheme: dark;
+  --bg: #130a24;
+  --fg: #f6ecff;
+  --muted: #a98fcb;
+  --line: #2f1f4d;
+  --card: #1f1237;
+  --field: #2a1a47;
+  --hover: rgb(255 255 255 / 0.05);
+  --brand: #c26bff;
+  --brand-hover: #b04ff5;
+  --like: #ff4fa3;
+}
+
+:root[data-theme='birthday'] body {
+  background-image:
+    radial-gradient(60rem 40rem at 8% -10%, rgb(194 107 255 / 0.2), transparent 60%),
+    radial-gradient(50rem 35rem at 100% 0%, rgb(255 79 163 / 0.14), transparent 60%);
+  background-attachment: fixed;
+}
+
 @layer base {
   html {
     @apply font-sans;
   }
+
   body {
     @apply bg-bg text-fg antialiased;
   }
+
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
 }
 
+/* ── Birthday animations ─────────────────────────────────────────────────── */
+
+/* Twinkling stars behind the page (birthday theme only). */
+.x-sparkles {
+  background-image:
+    radial-gradient(2px 2px at 12% 18%, rgb(255 255 255 / 0.9), transparent),
+    radial-gradient(2px 2px at 28% 72%, rgb(255 214 255 / 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 44% 34%, rgb(255 255 255 / 0.8), transparent),
+    radial-gradient(2px 2px at 58% 88%, rgb(255 230 180 / 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 71% 14%, rgb(255 255 255 / 0.9), transparent),
+    radial-gradient(2px 2px at 86% 52%, rgb(220 190 255 / 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 93% 82%, rgb(255 255 255 / 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 6% 58%, rgb(255 255 255 / 0.8), transparent);
+  animation: x-twinkle 5s ease-in-out infinite alternate;
+}
+
+@keyframes x-twinkle {
+  from {
+    opacity: 0.25;
+  }
+
+  to {
+    opacity: 0.85;
+  }
+}
+
+/* Emoji that fly out of the like button. */
+.x-burst-particle {
+  animation: x-burst 750ms ease-out forwards;
+}
+
+@keyframes x-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1.2);
+  }
+}
+
+/* Popups pop in softly. */
+.x-pop {
+  animation: x-pop 350ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes x-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* The scrolling "breaking news" bar. */
+.x-ticker-track {
+  animation: x-ticker 90s linear infinite;
+}
+
+.x-ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes x-ticker {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* An endless loop at 0.01ms would flicker, so stop these entirely. */
+  .x-ticker-track,
+  .x-sparkles {
+    animation: none !important;
   }
 }

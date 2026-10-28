@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Theme = 'dark' | 'dim' | 'light';
+/** 'birthday' is only offered to (and applied for) the birthday account. */
+export type Theme = 'dark' | 'dim' | 'light' | 'birthday';
 
 interface ThemeState {
   theme: Theme;

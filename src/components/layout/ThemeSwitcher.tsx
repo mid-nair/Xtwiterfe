@@ -1,4 +1,5 @@
-import { Moon, Sun, SunDim } from 'lucide-react';
+import { Moon, Sparkles, Sun, SunDim } from 'lucide-react';
+import { useIsBirthdayUser } from '@/hooks/useIsBirthdayUser';
 import { cn } from '@/lib/cn';
 import { useThemeStore, type Theme } from '@/stores/themeStore';
 
@@ -6,15 +7,20 @@ const OPTIONS = [
   { value: 'dark', label: 'Lights out', icon: Moon },
   { value: 'dim', label: 'Dim', icon: SunDim },
   { value: 'light', label: 'Light', icon: Sun },
+  { value: 'birthday', label: 'Birthday', icon: Sparkles },
 ] as const satisfies readonly { value: Theme; label: string; icon: unknown }[];
 
 export function ThemeSwitcher() {
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const isBirthday = useIsBirthdayUser();
+
+  // The birthday theme is a surprise for one account only.
+  const options = isBirthday ? OPTIONS : OPTIONS.filter((option) => option.value !== 'birthday');
 
   return (
     <div role="group" aria-label="Theme" className="flex gap-0.5 rounded-full border border-line p-0.5">
-      {OPTIONS.map(({ value, label, icon: Icon }) => (
+      {options.map(({ value, label, icon: Icon }) => (
         <button
           key={value}
           type="button"

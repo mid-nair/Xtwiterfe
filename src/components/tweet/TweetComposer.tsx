@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { MAX_TWEET_LENGTH } from '@/config/constants';
 import { useCreateTweet } from '@/hooks/useCreateTweet';
+import { useIsBirthdayUser } from '@/hooks/useIsBirthdayUser';
 import { useRequiredUser } from '@/hooks/useRequiredUser';
 import { useUploadImage } from '@/hooks/useUploadImage';
 import { useUploadVideo } from '@/hooks/useUploadVideo';
@@ -32,6 +33,7 @@ interface TweetComposerProps {
 
 export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerProps) {
   const user = useRequiredUser();
+  const isBirthday = useIsBirthdayUser();
   const { mutate, isPending, error } = useCreateTweet();
   const upload = useUploadImage();
   const uploadVideo = useUploadVideo();
@@ -57,6 +59,11 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
 
   // Cancel an in-flight video upload if the composer is closed.
   useEffect(() => () => videoAbortRef.current?.abort(), []);
+
+  // The birthday girl manifests her posts instead of just posting them.
+  const manifest = isBirthday && !replyTo;
+  const placeholder = replyTo ? 'Post your reply' : manifest ? 'Manifest something… ✨' : "What's happening?";
+  const submitLabel = replyTo ? 'Reply' : manifest ? 'Manifest ✨' : 'Post';
 
   const trimmed = content.trim();
   const remaining = MAX_TWEET_LENGTH - content.length;
@@ -186,7 +193,7 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
           autoFocus={autoFocus}
           rows={2}
           aria-label={replyTo ? 'Post your reply' : 'Post text'}
-          placeholder={replyTo ? 'Post your reply' : "What's happening?"}
+          placeholder={placeholder}
           className="field-sizing-content min-h-14 w-full resize-none bg-transparent py-2 text-xl outline-none placeholder:text-muted"
         />
 
@@ -311,7 +318,7 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
               </span>
             )}
             <Button type="submit" size="sm" disabled={!canSubmit} loading={isPending}>
-              {replyTo ? 'Reply' : 'Post'}
+              {submitLabel}
             </Button>
           </div>
         </div>

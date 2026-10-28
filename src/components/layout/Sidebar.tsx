@@ -8,27 +8,43 @@ import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { XLogo } from '@/components/ui/XLogo';
 import { buildNavItems } from '@/config/navigation';
 import { useLogout } from '@/hooks/useAuth';
+import { useIsBirthdayUser } from '@/hooks/useIsBirthdayUser';
 import { useUnreadCounts } from '@/hooks/useNotifications';
 import { useRequiredUser } from '@/hooks/useRequiredUser';
+import { useTripleTap } from '@/hooks/useTripleTap';
 import { cn } from '@/lib/cn';
+import { useBirthdayStore } from '@/stores/birthdayStore';
 import { NavBadge } from './NavBadge';
 
 export function Sidebar() {
   const user = useRequiredUser();
   const logout = useLogout();
   const unread = useUnreadCounts();
+  const isBirthday = useIsBirthdayUser();
+  const openPanel = useBirthdayStore((state) => state.openPanel);
   const [composing, setComposing] = useState(false);
   const closeCompose = useCallback(() => setComposing(false), []);
+
+  // Easter egg: tap the X logo three times to open the secret letter.
+  const openSecret = useCallback(() => openPanel('secret'), [openPanel]);
+  const handleLogoTap = useTripleTap(openSecret);
+
+  const postLabel = isBirthday ? 'Manifest ✨' : 'Post';
 
   return (
     <header className="sticky top-0 hidden h-screen w-20 shrink-0 flex-col justify-between px-2 py-3 sm:flex xl:w-64">
       <div className="flex flex-col items-center gap-1 xl:items-stretch">
-        <Link to="/" aria-label="Home" className="mb-1 w-fit rounded-full p-3 transition-colors hover:bg-hover">
+        <Link
+          to="/"
+          aria-label="Home"
+          onClick={isBirthday ? handleLogoTap : undefined}
+          className="mb-1 w-fit rounded-full p-3 transition-colors hover:bg-hover"
+        >
           <XLogo className="size-7" />
         </Link>
 
         <nav aria-label="Primary" className="flex flex-col items-center gap-1 xl:items-stretch">
-          {buildNavItems(user.username, unread).map(({ label, to, icon: Icon, end, badge }) => (
+          {buildNavItems(user.username, unread, isBirthday).map(({ label, to, icon: Icon, end, badge }) => (
             <NavLink
               key={to}
               to={to}
@@ -51,11 +67,11 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => setComposing(true)}
-          aria-label="Post"
+          aria-label={postLabel}
           className="mt-3 flex size-12 items-center justify-center rounded-full bg-brand font-bold text-white transition-colors hover:bg-brand-hover xl:h-[52px] xl:w-full"
         >
           <Feather className="size-6 xl:hidden" />
-          <span className="hidden text-[17px] xl:inline">Post</span>
+          <span className="hidden text-[17px] xl:inline">{postLabel}</span>
         </button>
       </div>
 

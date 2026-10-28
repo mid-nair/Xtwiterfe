@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { BIRTHDAY_AGE, BIRTHDAY_LABEL, BIRTHDAY_SIGN, isBirthdayUser } from '@/config/birthday';
 import { useOpenConversation } from '@/hooks/useMessages';
 import { useAuthStore } from '@/stores/authStore';
 import { getErrorMessage } from '@/lib/apiError';
+import { cn } from '@/lib/cn';
 import { formatCount, formatJoinDate } from '@/lib/format';
 import type { ProfileUser } from '@/types/user';
 import { FollowButton } from './FollowButton';
@@ -14,6 +16,7 @@ export function ProfileHeader({ user }: { user: ProfileUser }) {
   const isSelf = useAuthStore((state) => state.user?.id === user.id);
   const navigate = useNavigate();
   const openConversation = useOpenConversation();
+  const isBirthdayProfile = isBirthdayUser(user);
 
   const handleMessage = () => {
     openConversation.mutate(user.id, {
@@ -29,7 +32,12 @@ export function ProfileHeader({ user }: { user: ProfileUser }) {
 
       <div className="px-4 pb-4">
         <div className="flex items-start justify-between">
-          <Avatar src={user.avatar_url} name={user.display_name} size="xl" className="-mt-14 border-4 border-bg sm:-mt-16" />
+          <Avatar
+            src={user.avatar_url}
+            name={user.display_name}
+            size="xl"
+            className={cn('-mt-14 border-4 sm:-mt-16', isBirthdayProfile ? 'border-brand' : 'border-bg')}
+          />
           <div className="flex gap-2 pt-3">
             {isSelf ? (
               <Button variant="outline" size="sm" onClick={() => navigate('/settings/profile')}>
@@ -62,6 +70,15 @@ export function ProfileHeader({ user }: { user: ProfileUser }) {
           {user.is_verified && <VerifiedBadge />}
         </div>
         <p className="text-muted">@{user.username}</p>
+
+        {isBirthdayProfile && (
+          <p className="mt-2 flex flex-wrap gap-2 text-[13px] font-bold">
+            <span className="rounded-full bg-brand/15 px-3 py-1 text-brand">
+              🎂 Turned {BIRTHDAY_AGE} on {BIRTHDAY_LABEL}
+            </span>
+            <span className="rounded-full bg-like/15 px-3 py-1 text-like">♏ {BIRTHDAY_SIGN}</span>
+          </p>
+        )}
 
         {user.bio && <p className="mt-3 whitespace-pre-wrap">{user.bio}</p>}
 

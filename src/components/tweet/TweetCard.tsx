@@ -5,29 +5,14 @@ import { Avatar } from '@/components/ui/Avatar';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { cn } from '@/lib/cn';
 import { formatRelativeTime } from '@/lib/format';
-import type { Tweet, TweetMedia } from '@/types/tweet';
+import { getTweetMedia } from '@/lib/tweetMedia';
+import type { Tweet } from '@/types/tweet';
 import { ComposeModal } from './ComposeModal';
 import { TweetActions } from './TweetActions';
 
 interface TweetCardProps {
   tweet: Tweet;
   detail?: boolean;
-}
-
-const VIDEO_EXTENSION_RE = /\.(mp4|webm|mov|m4v)(?:$|[?#])/i;
-
-/** Fallback for older responses that only carry `media_urls`. */
-function inferMediaType(url: string): TweetMedia['type'] {
-  return url.includes('/video/upload/') || VIDEO_EXTENSION_RE.test(url) ? 'video' : 'image';
-}
-
-/**
- * Prefer the typed `media` list from the API; fall back to `media_urls`
- * (typed by URL) so videos are never rendered as broken <img> tags.
- */
-function getTweetMedia(tweet: Tweet): TweetMedia[] {
-  if (tweet.media && tweet.media.length > 0) return tweet.media;
-  return (tweet.media_urls ?? []).map((url) => ({ url, type: inferMediaType(url) }));
 }
 
 export const TweetCard = memo(function TweetCard({ tweet, detail }: TweetCardProps) {

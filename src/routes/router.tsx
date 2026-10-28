@@ -34,6 +34,7 @@ export const router = createBrowserRouter([
             lazy: lazyPage(() => import('@/pages/ConversationPage'), 'ConversationPage'),
           },
           { path: 'bookmarks', lazy: lazyPage(() => import('@/pages/BookmarksPage'), 'BookmarksPage') },
+          { path: 'memories', lazy: lazyPage(() => import('@/pages/MemoriesPage'), 'MemoriesPage') },
           { path: 'tweet/:tweetId', lazy: lazyPage(() => import('@/pages/TweetDetailPage'), 'TweetDetailPage') },
           {
             path: 'settings/profile',
