@@ -16,6 +16,14 @@ interface EnvelopeProps {
   onOpen: (sender: Sender, text: string) => void;
 }
 
+/** A short teaser for the envelope card: the first sentence of the letter, trimmed. */
+function previewOf(text: string): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  const firstSentence = clean.match(/^.+?[.!?](?=\s|$)/)?.[0] ?? clean;
+  const base = firstSentence.length >= 20 ? firstSentence : clean;
+  return base.length > 90 ? `${base.slice(0, 87).trimEnd()}...` : base;
+}
+
 /** One sealed envelope. The letter text is the friend's newest top-level post. */
 function Envelope({ sender, onOpen }: EnvelopeProps) {
   const feed = useUserTweets(sender.username, 'posts');
@@ -24,14 +32,14 @@ function Envelope({ sender, onOpen }: EnvelopeProps) {
   const letter = feed.tweets.find((tweet) => tweet.content.length > 280);
 
   if (feed.isLoading) {
-    return <div aria-hidden="true" className="h-44 animate-pulse rounded-2xl bg-card" />;
+    return <div aria-hidden="true" className="h-56 animate-pulse rounded-2xl bg-card" />;
   }
 
   // Never hide an envelope: if the letter is not in the database yet, show a clear placeholder.
   if (!letter) {
     return (
       <div
-        className="relative flex h-44 w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border border-dashed border-line px-4 text-center"
+        className="relative flex h-56 w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border border-dashed border-line px-4 text-center"
         style={{ background: `linear-gradient(160deg, ${sender.accent}55, #2a144855)` }}
       >
         <span className="text-3xl" aria-hidden="true">✍️</span>
@@ -48,7 +56,7 @@ function Envelope({ sender, onOpen }: EnvelopeProps) {
       type="button"
       onClick={() => onOpen(sender, letter.content)}
       aria-label={`${opened ? 'Reopen' : 'Open'} the letter from ${sender.name}`}
-      className="group relative h-44 w-full overflow-hidden rounded-2xl border border-line text-left shadow-lg transition-transform duration-300 hover:-translate-y-1"
+      className="group relative h-56 w-full overflow-hidden rounded-2xl border border-line text-left shadow-lg transition-transform duration-300 hover:-translate-y-1"
       style={{ background: `linear-gradient(160deg, ${sender.accent}, #2a1448)` }}
     >
       {/* Envelope flap */}
@@ -61,11 +69,16 @@ function Envelope({ sender, onOpen }: EnvelopeProps) {
       <span
         aria-hidden="true"
         className={cn(
-          'absolute left-1/2 top-[44%] flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl shadow-md transition-transform duration-300 group-hover:scale-110',
+          'absolute left-1/2 top-[36%] flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl shadow-md transition-transform duration-300 group-hover:scale-110',
           opened ? 'bg-white/90' : 'bg-[#ff4f6d]',
         )}
       >
         {opened ? '💌' : '❤️'}
+      </span>
+
+      {/* Short teaser; the full letter opens on tap and also lives as a post on the friend's profile */}
+      <span className="absolute inset-x-0 top-[62%] px-4 text-center text-sm italic leading-snug text-white/90">
+        “{previewOf(letter.content)}”
       </span>
 
       <span className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4 text-white">
