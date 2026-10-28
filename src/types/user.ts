@@ -33,3 +33,10 @@ export type UpdateProfilePayload = Partial<
     'display_name' | 'bio' | 'location' | 'website_url' | 'avatar_url' | 'banner_url'
   >
 >;
+
+/** A user row in a Followers / Following list. */
+export interface ConnectionUser extends SuggestedUser {
+  bio: string;
+}
+
+export type ConnectionKind = 'followers' | 'following';

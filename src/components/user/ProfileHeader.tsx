@@ -1,5 +1,5 @@
 import { Calendar, Link2, MapPin } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
@@ -81,8 +81,12 @@ export function ProfileHeader({ user }: { user: ProfileUser }) {
         </ul>
 
         <p className="mt-3 flex gap-5 text-[15px] text-muted">
-          <span><strong className="text-fg">{formatCount(user.following_count)}</strong> Following</span>
-          <span><strong className="text-fg">{formatCount(user.follower_count)}</strong> Followers</span>
+          <Link to={`/${user.username}/following`} className="hover:underline">
+            <strong className="text-fg">{formatCount(user.following_count)}</strong> Following
+          </Link>
+          <Link to={`/${user.username}/followers`} className="hover:underline">
+            <strong className="text-fg">{formatCount(user.follower_count)}</strong> Followers
+          </Link>
         </p>
       </div>
     </section>

@@ -1,5 +1,5 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { ImagePlus, Upload, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { ImagePlus, Upload, Video, X } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -7,12 +7,22 @@ import { MAX_TWEET_LENGTH } from '@/config/constants';
 import { useCreateTweet } from '@/hooks/useCreateTweet';
 import { useRequiredUser } from '@/hooks/useRequiredUser';
 import { useUploadImage } from '@/hooks/useUploadImage';
+import { useUploadVideo } from '@/hooks/useUploadVideo';
 import { getErrorMessage } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 import { isHttpUrl } from '@/lib/validators';
 import type { Tweet } from '@/types/tweet';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
+interface AttachedVideo {
+  /** Local blob: URL used for instant preview while the upload runs. */
+  previewUrl: string;
+  /** Hosted URL returned by the server once the upload finishes. */
+  uploadedUrl: string | null;
+}
 
 interface TweetComposerProps {
   replyTo?: Tweet;
@@ -24,17 +34,50 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
   const user = useRequiredUser();
   const { mutate, isPending, error } = useCreateTweet();
   const upload = useUploadImage();
+  const uploadVideo = useUploadVideo();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const videoAbortRef = useRef<AbortController | null>(null);
+  const videoRequestRef = useRef(0);
 
   const [content, setContent] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaOpen, setMediaOpen] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [video, setVideo] = useState<AttachedVideo | null>(null);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoError, setVideoError] = useState<string | null>(null);
+
+  const previewUrl = video?.previewUrl;
+  // Free the blob URL when the preview is replaced, removed, or the composer unmounts.
+  useEffect(() => {
+    if (!previewUrl) return;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  // Cancel an in-flight video upload if the composer is closed.
+  useEffect(() => () => videoAbortRef.current?.abort(), []);
 
   const trimmed = content.trim();
   const remaining = MAX_TWEET_LENGTH - content.length;
-  const hasMedia = isHttpUrl(mediaUrl);
-  const canSubmit = trimmed.length > 0 && remaining >= 0 && !isPending && !upload.isPending;
+  const hasImage = isHttpUrl(mediaUrl);
+  const videoUploading = !!video && !video.uploadedUrl;
+  const hasVideoReady = !!video?.uploadedUrl;
+  const hasAnyMedia = hasImage || hasVideoReady;
+  const canSubmit =
+    (trimmed.length > 0 || hasAnyMedia) &&
+    remaining >= 0 &&
+    !isPending &&
+    !upload.isPending &&
+    !videoUploading;
+
+  const clearVideo = () => {
+    videoRequestRef.current += 1; // invalidate any pending upload callbacks
+    videoAbortRef.current?.abort();
+    videoAbortRef.current = null;
+    setVideo(null);
+    setVideoProgress(0);
+  };
 
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -59,15 +102,61 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
     });
   };
 
+  const handleVideoFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setVideoError(null);
+    if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+      setVideoError('Choose an MP4, WebM or MOV video.');
+      return;
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      setVideoError('Video must be 50MB or smaller.');
+      return;
+    }
+
+    // A post carries either a video or an image, never both.
+    setMediaUrl('');
+    setMediaOpen(false);
+    clearVideo();
+
+    const requestId = videoRequestRef.current;
+    const controller = new AbortController();
+    videoAbortRef.current = controller;
+    setVideo({ previewUrl: URL.createObjectURL(file), uploadedUrl: null });
+    setVideoProgress(0);
+
+    uploadVideo.mutate(
+      { file, signal: controller.signal, onProgress: setVideoProgress },
+      {
+        onSuccess: ({ url }) => {
+          if (requestId !== videoRequestRef.current) return;
+          setVideo((current) => (current ? { ...current, uploadedUrl: url } : current));
+        },
+        onError: (uploadError) => {
+          if (requestId !== videoRequestRef.current) return;
+          setVideo(null);
+          setVideoProgress(0);
+          setVideoError(getErrorMessage(uploadError, 'Video upload failed. Try again.'));
+        },
+      },
+    );
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!canSubmit) return;
+
+    const mediaUrls = video?.uploadedUrl ? [video.uploadedUrl] : hasImage ? [mediaUrl.trim()] : [];
+
     mutate(
       {
         content: trimmed,
         reply_to_tweet_id: replyTo?.id ?? null,
         quote_tweet_id: null,
-        media_urls: hasMedia ? [mediaUrl.trim()] : [],
+        media_urls: mediaUrls,
       },
       {
         onSuccess: () => {
@@ -75,13 +164,16 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
           setMediaUrl('');
           setMediaOpen(false);
           setFileError(null);
+          setVideoError(null);
+          clearVideo();
           onPosted?.();
         },
       },
     );
   };
 
-  const mediaError = fileError ?? (upload.error ? getErrorMessage(upload.error) : null);
+  const mediaError =
+    fileError ?? videoError ?? (upload.error ? getErrorMessage(upload.error) : null);
 
   return (
     <div className="flex gap-3">
@@ -98,7 +190,7 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
           className="field-sizing-content min-h-14 w-full resize-none bg-transparent py-2 text-xl outline-none placeholder:text-muted"
         />
 
-        {mediaOpen && (
+        {mediaOpen && !video && (
           <div className="mb-3 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -131,7 +223,7 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
           </div>
         )}
 
-        {hasMedia && (
+        {hasImage && !video && (
           <div className="relative mb-3 overflow-hidden rounded-2xl border border-line">
             <img src={mediaUrl.trim()} alt="Attachment preview" className="max-h-72 w-full object-cover" />
             <IconButton
@@ -144,14 +236,67 @@ export function TweetComposer({ replyTo, autoFocus, onPosted }: TweetComposerPro
           </div>
         )}
 
+        {video && (
+          <div className="relative mb-3 overflow-hidden rounded-2xl border border-line bg-black">
+            <video
+              src={video.previewUrl}
+              controls
+              playsInline
+              preload="metadata"
+              className="max-h-72 w-full"
+            />
+            <IconButton
+              label="Remove video"
+              onClick={clearVideo}
+              className="absolute right-2 top-2 bg-black/70 text-white hover:bg-black"
+            >
+              <X className="size-4" />
+            </IconButton>
+            {videoUploading && (
+              <div role="status" className="absolute inset-x-0 bottom-0 bg-black/70 px-3 py-2 text-sm text-white">
+                <div className="mb-1 flex justify-between">
+                  <span>{videoProgress >= 100 ? 'Processing video…' : 'Uploading video…'}</span>
+                  <span className="tabular-nums">{videoProgress}%</span>
+                </div>
+                <div className="h-1 overflow-hidden rounded-full bg-white/30">
+                  <div
+                    className="h-full rounded-full bg-brand transition-[width]"
+                    style={{ width: `${videoProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          onChange={handleVideoFile}
+          className="hidden"
+          aria-label="Upload video"
+        />
+
         <div className="flex items-center justify-between border-t border-line pt-3">
-          <IconButton
-            label="Add image"
-            onClick={() => setMediaOpen((open) => !open)}
-            className="-ml-2 text-brand hover:bg-brand/10"
-          >
-            <ImagePlus className="size-5" />
-          </IconButton>
+          <div className="-ml-2 flex items-center">
+            <IconButton
+              label="Add image"
+              onClick={() => setMediaOpen((open) => !open)}
+              disabled={!!video}
+              className="text-brand hover:bg-brand/10 disabled:opacity-40"
+            >
+              <ImagePlus className="size-5" />
+            </IconButton>
+            <IconButton
+              label="Add video"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={hasImage || upload.isPending}
+              className="text-brand hover:bg-brand/10 disabled:opacity-40"
+            >
+              <Video className="size-5" />
+            </IconButton>
+          </div>
 
           <div className="flex items-center gap-3">
             {content.length > 0 && (

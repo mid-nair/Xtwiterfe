@@ -1,5 +1,9 @@
 import { apiClient } from '@/lib/apiClient';
+import type { CursorPage } from '@/types/api';
+import { FEED_PAGE_SIZE } from '@/config/constants';
 import type {
+  ConnectionKind,
+  ConnectionUser,
   ProfileUser,
   SuggestedUser,
   UpdateProfilePayload,
@@ -16,6 +20,17 @@ export const userService = {
   },
   async search(query: string): Promise<SuggestedUser[]> {
     const { data } = await apiClient.get<SuggestedUser[]>('/users/search', { params: { q: query } });
+    return data;
+  },
+  async connections(
+    username: string,
+    kind: ConnectionKind,
+    cursor?: string,
+  ): Promise<CursorPage<ConnectionUser>> {
+    const { data } = await apiClient.get<CursorPage<ConnectionUser>>(
+      `/users/${username}/${kind}`,
+      { params: { cursor, limit: FEED_PAGE_SIZE } },
+    );
     return data;
   },
   async follow(userId: string): Promise<void> {

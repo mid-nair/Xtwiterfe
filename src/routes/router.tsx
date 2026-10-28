@@ -8,7 +8,7 @@ import { RouteError } from './RouteError';
 /** Code-splits a page: lazyPage(() => import('@/pages/X'), 'X'). */
 const lazyPage =
   <K extends string>(load: () => Promise<Record<K, ComponentType>>, key: K) =>
-  async () => ({ Component: (await load())[key] });
+    async () => ({ Component: (await load())[key] });
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +38,14 @@ export const router = createBrowserRouter([
           {
             path: 'settings/profile',
             lazy: lazyPage(() => import('@/pages/EditProfilePage'), 'EditProfilePage'),
+          },
+          {
+            path: ':username/followers',
+            lazy: lazyPage(() => import('@/pages/FollowListPage'), 'FollowListPage'),
+          },
+          {
+            path: ':username/following',
+            lazy: lazyPage(() => import('@/pages/FollowListPage'), 'FollowListPage'),
           },
           { path: ':username', lazy: lazyPage(() => import('@/pages/ProfilePage'), 'ProfilePage') },
         ],

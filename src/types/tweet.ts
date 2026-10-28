@@ -22,6 +22,11 @@ export interface ViewerContext {
   bookmarked: boolean;
 }
 
+export interface TweetMedia {
+  url: string;
+  type: 'image' | 'video';
+}
+
 export interface Tweet {
   id: string;
   content: string;
@@ -29,6 +34,8 @@ export interface Tweet {
   reply_to_tweet_id: string | null;
   reply_to_user: TweetAuthor | null;
   media_urls?: string[];
+  /** Typed media list (image or video). Prefer this over `media_urls`. */
+  media?: TweetMedia[];
   stats: TweetStats;
   viewer_context: ViewerContext;
   created_at: string;
