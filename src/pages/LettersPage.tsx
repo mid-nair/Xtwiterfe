@@ -47,6 +47,12 @@ function Envelope({ sender, onOpen }: EnvelopeProps) {
         <span className="text-sm text-muted">
           {feed.isError ? 'Could not load this letter. Please refresh.' : 'Still being written...'}
         </span>
+        {/* Tiny diagnostic so a missing letter is easy to explain: how many posts the server returned. */}
+        {!feed.isError && (
+          <span className="mt-1 text-[11px] text-muted/70">
+            (server sent {feed.tweets.length} post{feed.tweets.length === 1 ? '' : 's'}; re-run the seed with --force)
+          </span>
+        )}
       </div>
     );
   }
