@@ -1,11 +1,11 @@
-import { memo, useCallback, useState, type MouseEvent } from 'react';
+import { memo, useCallback, useMemo, useState, type MouseEvent } from 'react';
 import { Repeat2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Avatar } from '@/components/ui/Avatar';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { cn } from '@/lib/cn';
 import { formatRelativeTime } from '@/lib/format';
-import type { Tweet } from '@/types/tweet';
+import type { Tweet, TweetMedia } from '@/types/tweet';
 import { ComposeModal } from './ComposeModal';
 import { TweetActions } from './TweetActions';
 
@@ -14,14 +14,33 @@ interface TweetCardProps {
   detail?: boolean;
 }
 
+const VIDEO_EXTENSION_RE = /\.(mp4|webm|mov|m4v)(?:$|[?#])/i;
+
+/** Fallback for older responses that only carry `media_urls`. */
+function inferMediaType(url: string): TweetMedia['type'] {
+  return url.includes('/video/upload/') || VIDEO_EXTENSION_RE.test(url) ? 'video' : 'image';
+}
+
+/**
+ * Prefer the typed `media` list from the API; fall back to `media_urls`
+ * (typed by URL) so videos are never rendered as broken <img> tags.
+ */
+function getTweetMedia(tweet: Tweet): TweetMedia[] {
+  if (tweet.media && tweet.media.length > 0) return tweet.media;
+  return (tweet.media_urls ?? []).map((url) => ({ url, type: inferMediaType(url) }));
+}
+
 export const TweetCard = memo(function TweetCard({ tweet, detail }: TweetCardProps) {
-  const { user, media_urls: media = [], reply_to_user: replyToUser, reposted_by: repostedBy } = tweet;
+  const { user, reply_to_user: replyToUser, reposted_by: repostedBy } = tweet;
   const navigate = useNavigate();
   const [replying, setReplying] = useState(false);
   const closeReply = useCallback(() => setReplying(false), []);
 
+  const media = useMemo(() => getTweetMedia(tweet), [tweet]);
+
   const openDetail = (event: MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest('a,button')) return;
+    // Don't navigate when interacting with links, buttons or the video player controls.
+    if ((event.target as HTMLElement).closest('a,button,video')) return;
     navigate(`/tweet/${tweet.id}`);
   };
 
@@ -67,14 +86,16 @@ export const TweetCard = memo(function TweetCard({ tweet, detail }: TweetCardPro
             </p>
           )}
 
-          <p
-            className={cn(
-              'mt-0.5 whitespace-pre-wrap break-words leading-5',
-              detail ? 'text-[17px] leading-6' : 'text-[15px]',
-            )}
-          >
-            {tweet.content}
-          </p>
+          {tweet.content && (
+            <p
+              className={cn(
+                'mt-0.5 whitespace-pre-wrap break-words leading-5',
+                detail ? 'text-[17px] leading-6' : 'text-[15px]',
+              )}
+            >
+              {tweet.content}
+            </p>
+          )}
 
           {media.length > 0 && (
             <div
@@ -83,9 +104,26 @@ export const TweetCard = memo(function TweetCard({ tweet, detail }: TweetCardPro
                 media.length > 1 && 'grid-cols-2',
               )}
             >
-              {media.slice(0, 4).map((url) => (
-                <img key={url} src={url} alt="" loading="lazy" className="max-h-96 w-full object-cover" />
-              ))}
+              {media.slice(0, 4).map((item) =>
+                item.type === 'video' ? (
+                  <video
+                    key={item.url}
+                    src={item.url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="max-h-96 w-full bg-black object-contain"
+                  />
+                ) : (
+                  <img
+                    key={item.url}
+                    src={item.url}
+                    alt=""
+                    loading="lazy"
+                    className="max-h-96 w-full object-cover"
+                  />
+                ),
+              )}
             </div>
           )}
 
