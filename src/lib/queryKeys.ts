@@ -1,4 +1,5 @@
 import type { FeedType, ProfileTweetTab } from '@/types/tweet';
+import type { ConnectionKind } from '@/types/user';
 
 export const queryKeys = {
   feeds: {
@@ -18,7 +19,11 @@ export const queryKeys = {
   },
   users: {
     all: ['users'] as const,
+    profileAll: ['users', 'profile'] as const,
     profile: (username: string) => ['users', 'profile', username] as const,
+    connectionsAll: ['users', 'connections'] as const,
+    connections: (username: string, kind: ConnectionKind) =>
+      ['users', 'connections', username, kind] as const,
   },
   notifications: {
     all: ['notifications'] as const,
